@@ -26,6 +26,14 @@
       display: block;
       padding-top:40px;
     }
+    #resolution {
+      font-family: Sans;
+      font-size:40px;
+      
+    }
+    .ib {
+		display:inline-block;
+	}
   </style>
 
 </head>
@@ -41,7 +49,8 @@
           x = w.innerWidth || e.clientWidth || g.clientWidth,
           y = w.innerHeight|| e.clientHeight|| g.clientHeight;
       
-      document.getElementById("loghere").innerHTML = x+"x"+y;
+      document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>"+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
+      document.getElementById("dpr").innerHTML = window.devicePixelRation
     }
 
     document.onreadystatechange = function () {
@@ -52,7 +61,8 @@
   </script>
   
   <div id="output">
-    <span id="loghere"></span>
+    <div id="resolution" class="ib"></div>
+    <div class="ib">Device Pixel Ratio: <span id="dpr"></span> (retina display DPR>1)</div>
   </div>
   
     
