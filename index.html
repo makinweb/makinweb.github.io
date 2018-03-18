@@ -1,70 +1,119 @@
 <!DOCTYPE html>
 <html lang="en_US">
 <head>
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-  <meta http-equiv="content-type" content="text/html; charset=UTF-8;charset=utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1" />
-  <meta name="HandheldFriendly" content="true"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1" />
+    <meta name="HandheldFriendly" content="true"/>
 
-  <link rel="canonical" href="https://makinweb.github.io/">
+    <link rel="canonical" href="https://makinweb.github.io/">
+        
+    <meta name="twitter:card" content="makin web">
+    <meta name="twitter:site" value="@makonil">
+
+    <meta property="og:url" content="https://makinweb.github.io/" />
+    <meta property="og:site_name" content="Makin" />
+    <meta property="og:title" content="makin" />
+    <meta property="og:description" content="makin web test">
+
+
+    <title>Makin</title>
+    <meta name="description" content="makin web test">
     
-  <meta name="twitter:card" content="makin web">
-  <meta name="twitter:site" value="@makonil">
-
-  <meta property="og:url" content="https://makinweb.github.io/" />
-  <meta property="og:site_name" content="Makin" />
-  <meta property="og:title" content="makin" />
-  <meta property="og:description" content="makin web test">
-
-
-  <title>Makin</title>
-  <meta name="description" content="makin web test">
-  
-  <style>
-    #output {
-      text-align:center;
-      display: block;
-      padding-top:40px;
-    }
-    #resolution {
-      font-family: Sans;
-      font-size:40px;
-      
-    }
-    .ib {
-		display:inline-block;
-	}
-  </style>
+    <style>
+        .div-center {
+            text-align:center;
+            display: block;
+            padding-top:40px;
+            vertical-align:top;
+        }
+        .div-right {
+            text-align:right;
+            display: block;
+            padding-top:40px;
+        }
+        #resolution {
+            font-family: Sans;
+            font-size:40px;
+            
+        }
+        .ib {
+          display:inline-block;
+        }
+        .div-cell {
+          display: table-cell;
+        }
+    </style>
 
 </head>
-  <body>
+    <body>
 
-  <script>
+    <script>
+        
+        do_something = function () {
+            var w = window,
+                    d = document,
+                    e = d.documentElement,
+                    g = d.getElementsByTagName('body')[0],
+                    x = w.innerWidth || e.clientWidth || g.clientWidth,
+                    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+            
+            document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>"//+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
+            document.getElementById("dpr").innerHTML = window.devicePixelRatio
+        }
+
+        document.onreadystatechange = function () {
+            if (document.readyState == "interactive") {
+                window.setTimeout(do_something, 1*1000)
+            }
+        }
+    </script>
     
-    do_something = function () {
-      var w = window,
-          d = document,
-          e = d.documentElement,
-          g = d.getElementsByTagName('body')[0],
-          x = w.innerWidth || e.clientWidth || g.clientWidth,
-          y = w.innerHeight|| e.clientHeight|| g.clientHeight;
-      
-      document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>"//+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
-      document.getElementById("dpr").innerHTML = window.devicePixelRatio
-    }
+    <div class="div-center">
+        <div id="resolution" class="ib"></div>
+    </div>
+    <div class="div-center">
+        <div class="ib">Device Pixel Ratio: <span id="dpr"></span> (retina display DPR>1)</div>
+    </div>
 
-    document.onreadystatechange = function () {
-      if (document.readyState == "interactive") {
-        window.setTimeout(do_something, 1*1000)
+    <div class="div-center">
+      <div class="ib">
+        <div class="div-cell">
+          <img src="img600.jpg" style="width:600px; height: auto;"/>
+        </div>
+        <div class="div-cell">
+          <img src="img600.jpg" style="width:600px; height: auto;" id="img-retina"/>
+          <div class="div-right">
+            <input type="range" id="image-choser" min="600" max="1800" step="600" value="600"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      function addEventHandler(elem, eventType, handler) {
+        if (elem.addEventListener)
+                elem.addEventListener (eventType, handler, false);
+        else if (elem.attachEvent)
+                elem.attachEvent ('on' + eventType, handler); 
       }
-    }
-  </script>
-  
-  <div id="output">
-    <div id="resolution" class="ib"></div>
-    <div class="ib">Device Pixel Ratio: <span id="dpr"></span> (retina display DPR>1)</div>
-  </div>
-  
+      
+      on_load_callback = () => {
+        
+        var choser = document.getElementById("image-choser")
+        addEventHandler(choser, 'change', () => {
+          newimgsrc = "img"+document.getElementById("image-choser").value+".jpg"
+          document.getElementById("img-retina").src = newimgsrc
+          console.log("changed to "+newimgsrc)
+        })
+        
+      }
+      
+      addEventHandler(document, 'DOMContentLoaded', on_load_callback)
+      
+      
+    </script>
     
-  </body>
+    
+    </body>
 </html>
