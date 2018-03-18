@@ -43,6 +43,9 @@
         .div-cell {
           display: table-cell;
         }
+        .hidden {
+          display: none;
+        }
     </style>
 
 </head>
@@ -77,6 +80,10 @@
     </div>
 
     <div class="div-center">
+      <button onclick="document.getElementById('retina').style.display='block';">retina image test</button>
+    </div>
+    
+    <div class="div-center hidden" id="retina">
       <div class="ib">
         <div class="div-cell">
           <img src="img600.jpg" style="width:600px; height: auto;"/>
