@@ -46,6 +46,14 @@
         .hidden {
           display: none;
         }
+        #retina .div-cell {
+            overflow: hidden;
+            width: 150px;
+            height: auto;
+        }
+        #retina .div-cell img {
+            margin-left:-450px;
+        }
     </style>
 
 </head>
@@ -90,9 +98,11 @@
         </div>
         <div class="div-cell">
           <img src="img600.jpg" style="width:600px; height: auto;" id="img-retina"/>
-          <div class="div-right">
-            <input type="range" id="image-choser" min="600" max="1800" step="600" value="600"/>
-          </div>
+        </div>
+      </div><br/>
+      <div class="ib">
+        <div class="div-right">
+          <input type="range" id="image-choser" min="600" max="2400" step="600" value="600"/>
         </div>
       </div>
     </div>
