@@ -69,8 +69,8 @@
                     x = w.innerWidth || e.clientWidth || g.clientWidth,
                     y = w.innerHeight|| e.clientHeight|| g.clientHeight;
             
-            document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>"//+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
-            document.getElementById("dpr").innerHTML = window.devicePixelRatio
+            document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>";//+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
+            document.getElementById("dpr").innerHTML = window.devicePixelRatio;
         }
 
         document.onreadystatechange = function () {
@@ -78,6 +78,10 @@
                 window.setTimeout(do_something, 1*1000)
             }
         }
+
+        window.onresize = (event) => {
+            do_something();
+        };
     </script>
     
     <div class="div-center">
