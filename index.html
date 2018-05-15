@@ -2,58 +2,27 @@
 <html lang="en_US">
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8;charset=utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8;charset=utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1" />
     <meta name="HandheldFriendly" content="true"/>
 
-    <link rel="canonical" href="https://makinweb.github.io/">
+    <link rel="canonical" href="https://makinweb.github.io/" />
         
-    <meta name="twitter:card" content="makin web">
-    <meta name="twitter:site" value="@makonil">
+    <meta name="twitter:card" content="makin web"/>
+    <meta name="twitter:site" value="@makonil"/>
 
     <meta property="og:url" content="https://makinweb.github.io/" />
     <meta property="og:site_name" content="Makin" />
     <meta property="og:title" content="makin" />
-    <meta property="og:description" content="makin web test">
+    <meta property="og:description" content="makin web test"/>
 
 
     <title>Makin</title>
-    <meta name="description" content="makin web test">
+    <meta name="description" content="makin web test"/>
     
+    <link rel="stylesheet" href="htmlview.min.css" />
     <style>
-        .div-center {
-            text-align:center;
-            display: block;
-            padding-top:40px;
-            vertical-align:top;
-        }
-        .div-right {
-            text-align:right;
-            display: block;
-            padding-top:40px;
-        }
-        #resolution {
-            font-family: Sans;
-            font-size:40px;
-            
-        }
-        .ib {
-          display:inline-block;
-        }
-        .div-cell {
-          display: table-cell;
-        }
-        .hidden {
-          display: none;
-        }
-        #retina .div-cell {
-            overflow: hidden;
-            width: 150px;
-            height: auto;
-        }
-        #retina .div-cell img {
-            margin-left:-450px;
-        }
+        
     </style>
 
 </head>
@@ -82,55 +51,76 @@
         window.onresize = (event) => {
             do_something();
         };
+
+        function retinaOpen() {
+            var nodeRetina = document.getElementById("retina");
+            nodeRetina.style.display='block';
+            
+            var nodeImgNormal = document.getElementById("img-normal");
+            nodeImgNormal.setAttribute("src", nodeImgNormal.getAttribute("data-src"));
+
+            var nodeImgRetina = document.getElementById("img-retina");
+            nodeImgRetina.setAttribute("src", nodeImgRetina.getAttribute("data-src"));
+
+            document.getElementById("img-choser").value = 1;
+            window.scrollTo(0,document.body.scrollHeight);
+        }
+
+
+        function addEventHandler(elem, eventType, handler) {
+            if (elem.addEventListener)
+                    elem.addEventListener (eventType, handler, false);
+            else if (elem.attachEvent)
+                    elem.attachEvent ('on' + eventType, handler); 
+        }
+        
+        on_load_callback = () => {
+            
+            var choser = document.getElementById("img-choser");
+            addEventHandler(choser, 'change', () => {
+                newimgsrc = "360x"+document.getElementById("img-choser").value+".png";
+                document.getElementById("img-retina").src = newimgsrc;
+                document.getElementById("img-chooser-info").innerHTML = "currently ("+newimgsrc+")";
+                console.log("changed to "+newimgsrc);
+            })
+            
+        }
+        
+        addEventHandler(document, 'DOMContentLoaded', on_load_callback)
+        
     </script>
     
-    <div class="div-center">
+    <div class="div-center pad-top-40">
         <div id="resolution" class="ib"></div>
     </div>
-    <div class="div-center">
+    <div class="div-center pad-top-40">
         <div class="ib">Device Pixel Ratio: <span id="dpr"></span> (retina display DPR>1)</div>
     </div>
 
-    <div class="div-center">
-      <button onclick="document.getElementById('retina').style.display='block';">retina image test</button>
+    <div class="div-center pad-top-40">
+      <button id="bt-retina-open" onclick="retinaOpen();">retina image test</button>
     </div>
     
-    <div class="div-center hidden" id="retina">
+    <div class="div-center pad-top-40 hidden" id="retina">
       <div class="ib">
         <div class="div-cell">
-          <img src="img600.jpg" style="width:600px; height: auto;"/>
+          <img data-src="360x1.png" id="img-normal"/>
         </div>
         <div class="div-cell">
-          <img src="img600.jpg" style="width:600px; height: auto;" id="img-retina"/>
+          <img data-src="360x1.png" id="img-retina"/>
         </div>
       </div><br/>
-      <div class="ib">
-        <div class="div-right">
-          <input type="range" id="image-choser" min="600" max="2400" step="600" value="600"/>
+      <div class="div-center">
+        <div class="div-center">
+            drag bellow to increase bottom image resolution <span id="img-chooser-info"></span>
+        </div>
+        <div class="div-center">
+          <input type="range" id="img-choser" min="1" max="4" step="1" value="1"/>
         </div>
       </div>
     </div>
     
     <script>
-      function addEventHandler(elem, eventType, handler) {
-        if (elem.addEventListener)
-                elem.addEventListener (eventType, handler, false);
-        else if (elem.attachEvent)
-                elem.attachEvent ('on' + eventType, handler); 
-      }
-      
-      on_load_callback = () => {
-        
-        var choser = document.getElementById("image-choser")
-        addEventHandler(choser, 'change', () => {
-          newimgsrc = "img"+document.getElementById("image-choser").value+".jpg"
-          document.getElementById("img-retina").src = newimgsrc
-          console.log("changed to "+newimgsrc)
-        })
-        
-      }
-      
-      addEventHandler(document, 'DOMContentLoaded', on_load_callback)
       
       
     </script>

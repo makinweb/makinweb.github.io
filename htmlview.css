@@ -1,0 +1,77 @@
+body {
+  padding: 0px;
+  margin: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.div-center {
+  text-align: center;
+  display: block;
+}
+
+.pad-top-40 {
+  padding-top: 40px;
+}
+
+.div-right {
+  text-align: right;
+  display: block;
+  padding-top: 40px;
+}
+
+#resolution {
+  font-family: Sans;
+  font-size: 40px;
+}
+
+.ib {
+  display: inline-block;
+}
+
+.div-cell {
+  display: table-cell;
+}
+
+.hidden {
+  display: none;
+}
+
+#bt-retina-open {
+  padding: 20px;
+  background-color: #ff7741;
+  text-transform: uppercase;
+  border: solid 1px transparent;
+  transition: 0.5s all;
+  color: white;
+  letter-spacing: 4px;
+  cursor: pointer;
+}
+
+#bt-retina-open:hover {
+  background-color: #ffddaa;
+  color: brown;
+  border-color: brown;
+}
+
+#retina > .div-center {
+  font-size: 10px;
+  color: #222222;
+}
+
+#retina .div-cell {
+  display: block;
+  width: 360px;
+  height: auto;
+}
+
+#retina .div-cell img {
+  object-fit: cover;
+  max-width: 360px;
+  max-height: 360px;
+  width: auto;
+  height: 233px;
+}
+
+#retina #image-choser {
+  width: 200px;
+}
