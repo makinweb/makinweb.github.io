@@ -40,6 +40,7 @@
             
             document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>";//+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
             document.getElementById("dpr").innerHTML = window.devicePixelRatio;
+            document.getElementById("screen-orientation").innerHTML = screen.orientation.type + " " + screen.orientation.angle;
         }
 
         document.onreadystatechange = function () {
@@ -95,6 +96,9 @@
     </div>
     <div class="div-center pad-top-40">
         <div class="ib">Device Pixel Ratio: <span id="dpr"></span> (retina display DPR>1)</div>
+    </div>
+    <div class="div-center pad-top-40">
+        <div class="ib">screen.orientation: <span id="screen-orientation"></span></div>
     </div>
 
     <div class="div-center pad-top-40">
