@@ -41,6 +41,7 @@
             document.getElementById("resolution").innerHTML = x+" x "+y+" <br/>";//+e.clientWidth+" <br/>"+g.clientWIdth+" <br/>"+w.innerWidth;
             document.getElementById("dpr").innerHTML = window.devicePixelRatio;
             document.getElementById("screen-orientation").innerHTML = screen.orientation.type + " " + screen.orientation.angle;
+            document.getElementById("user-agent").innerHTML = navigator.userAgent;
         }
 
         document.onreadystatechange = function () {
@@ -90,6 +91,10 @@
         addEventHandler(document, 'DOMContentLoaded', on_load_callback)
         
     </script>
+    
+    <div class="div-center pad-top-40">
+        <div id="user-agent" class="ib"></div>
+    </div>
     
     <div class="div-center pad-top-40">
         <div id="resolution" class="ib"></div>
