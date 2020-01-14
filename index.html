@@ -90,6 +90,40 @@
         
         addEventHandler(document, 'DOMContentLoaded', on_load_callback)
         
+        
+        
+        
+        
+        function fingerprint() {
+            var sceneryimage = document.getElementById('sceneryimage');
+            var ctx = sceneryimage.getContext('2d');
+            ctx.clearRect(0, 0, sceneryimage.width, sceneryimage.height);
+            ctx.beginPath();
+            var txt = 'on retina display, bottom image should display clearer';
+            ctx.textBaseline = "top";
+            ctx.font = "16px 'Arial'";
+            ctx.textBaseline = "alphabetic";
+            ctx.rotate(.05);
+            ctx.fillStyle = "#f60";
+            ctx.fillRect(125,1,62,20);
+            ctx.fillStyle = "#069";
+            ctx.fillText(txt, 2, 15);
+            ctx.fillStyle = "rgba(102, 200, 0, 0.7)";
+            ctx.fillText(txt, 4, 17);
+            ctx.shadowBlur=10;
+            ctx.shadowColor="blue";
+            ctx.fillRect(-20,10,234,5);
+            var strng=sceneryimage.toDataURL();
+
+            var hash=0;
+            if (strng.length==0) return;
+            for (i = 0; i < strng.length; i++) {
+                char = strng.charCodeAt(i);
+                hash = ((hash<<5)-hash)+char;
+                hash = hash & hash;
+            }
+            return hash;
+        }
     </script>
     
     <div class="div-center pad-top-40">
@@ -117,6 +151,7 @@
         </div>
         <div class="div-cell">
           <img data-src="360x1.png" id="img-retina"/>
+          <canvas id="sceneryimage"></canvas>
         </div>
       </div><br/>
       <div class="div-center">
