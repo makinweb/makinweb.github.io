@@ -1,0 +1,993 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Sass Blog</title>
+  <id>https://sass-lang.com/blog</id>
+  <link href="https://sass-lang.com/blog"/>
+  <link href="https://sass-lang.com/feed.xml" rel="self"/>
+  <updated>2019-10-02T02:58:00+00:00</updated>
+  <entry>
+    <title>The Module System is Launched</title>
+    <link href="https://sass-lang.com/blog/the-module-system-is-launched" rel="alternate"/>
+    <id>https://sass-lang.com/blog/the-module-system-is-launched</id>
+    <published>2019-10-02T02:58:00+00:00</published>
+    <updated>2020-01-07T00:37:23+00:00</updated>
+    <author>
+      <name>Natalie Weizenbaum</name>
+    </author>
+    <content type="html">&lt;p&gt;The Sass team has known for years that the &lt;code&gt;@import&lt;/code&gt; rule, one of the earliest
+additions to Sass, wasn&amp;rsquo;t as good as we wanted it. It caused a litany of
+problems for our users:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;It was next to impossible to figure out where a given variable, mixin, or
+function (collectively called &amp;ldquo;members&amp;rdquo;) was originally defined, since
+anything defined in one stylesheet was available to all stylesheets that were
+imported after it.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Even if you chose to explicitly import every stylesheet that defined members
+you used, you&amp;rsquo;d end up with duplicate CSS and strange side-effects, because
+stylesheets were reloaded from scratch every time they were imported.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;It wasn&amp;rsquo;t safe to use terse and simple names because there was always a
+possibility that some other stylesheet elsewhere in your application would use
+the same name and mess up your logic. To be safe users had to manually add
+long, awkward namespaces to everything they defined.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Library authors had no way to ensure that their private helpers wouldn&amp;rsquo;t be
+accessed by downstream users, causing confusion and backwards-compatibility
+headaches.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;The &lt;a href="/documentation/at-rules/extend"&gt;&lt;code&gt;@extend&lt;/code&gt; rule&lt;/a&gt; could affect any selector anywhere in the stylesheet,
+not just those that its author explicitly chose to extend.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We also knew that any replacement we wanted to introduce would have to be
+designed and developed with the utmost care to ensure it would provide a
+rock-solid foundation for the future of Sass development. Over the past few
+years, we&amp;rsquo;ve discussed, designed, and developed a brand-new module system that
+solves these problems and more, and today we&amp;rsquo;re excited to announce that it&amp;rsquo;s
+available in Dart Sass 1.23.0.&lt;/p&gt;
+
+&lt;p&gt;Please note that the module system is &lt;em&gt;fully backwards-compatible&lt;/em&gt;. No existing
+features have been removed or deprecated, and your current Sass stylesheets will
+keep working just as they always have. We designed the module system to be
+&lt;a href="#import-compatibility"&gt;fully interoperable with &lt;code&gt;@import&lt;/code&gt;&lt;/a&gt; to make it easy for
+stylesheet authors to migrate to it incrementally. We do plan to &lt;a href="#future-plans"&gt;eventually get
+rid of &lt;code&gt;@import&lt;/code&gt;&lt;/a&gt;, but not until long after everyone&amp;rsquo;s had a
+chance to migrate.&lt;/p&gt;
+
+&lt;h2 id="use-the-heart-of-the-module-system"&gt;
+&lt;a class="anchor" href="#use-the-heart-of-the-module-system"&gt;&lt;span class="visuallyhidden"&gt;@use, the Heart of the Module System permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;@use&lt;/code&gt;, the Heart of the Module System&lt;/h2&gt;
+
+&lt;p&gt;The &lt;a href="/documentation/at-rules/use"&gt;&lt;code&gt;@use&lt;/code&gt; rule&lt;/a&gt; is the primary replacement for &lt;code&gt;@import&lt;/code&gt;: it makes CSS,
+variables, mixins, and functions from another stylesheet accessible in the
+current stylesheet. By default, variables, mixins, and functions are available
+in a namespace based on the basename of the URL.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nc"&gt;.element&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nl"&gt;background-color&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;bootstrap&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;$body-bg&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+  &lt;span class="k"&gt;@include&lt;/span&gt; &lt;span class="nd"&gt;bootstrap&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;float-left&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In addition to namespacing, there are a few important differences between &lt;code&gt;@use&lt;/code&gt;
+and &lt;code&gt;@import&lt;/code&gt;:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;@use&lt;/code&gt; only executes a stylesheet and includes its CSS once, no matter how
+many times that stylesheet is used.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@use&lt;/code&gt; only makes names available in the current stylesheet, as opposed to globally.&lt;/li&gt;
+&lt;li&gt;Members whose names begin with &lt;code&gt;-&lt;/code&gt; or &lt;code&gt;_&lt;/code&gt; are private to the current
+stylesheet with &lt;code&gt;@use&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;If a stylesheet includes &lt;code&gt;@extend&lt;/code&gt;, that extension is only applied to
+stylesheets it imports, not stylesheets that import it.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note that placeholder selectors are &lt;em&gt;not&lt;/em&gt; namespaced, but they &lt;em&gt;do&lt;/em&gt; respect
+privacy.&lt;/p&gt;
+
+&lt;h3 id="controlling-namespaces"&gt;
+&lt;a class="anchor" href="#controlling-namespaces"&gt;&lt;span class="visuallyhidden"&gt;Controlling Namespaces permalink&lt;/span&gt;&lt;/a&gt;Controlling Namespaces&lt;/h3&gt;
+
+&lt;p&gt;Although a &lt;code&gt;@use&lt;/code&gt; rule&amp;rsquo;s default namespace is determined by the basename of its
+URL, it can also be set explicitly using &lt;code&gt;as&lt;/code&gt;.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="nt"&gt;b&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nc"&gt;.element&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="k"&gt;@include&lt;/span&gt; &lt;span class="nd"&gt;b&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;float-left&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The special construct &lt;code&gt;as *&lt;/code&gt; can also be used to include everything in the
+top-level namespace. Note that if multiple modules expose members with the same
+name and are used with &lt;code&gt;as *&lt;/code&gt;, Sass will produce an error.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nc"&gt;.element&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="k"&gt;@include&lt;/span&gt; &lt;span class="nd"&gt;float-left&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id="configuring-libraries"&gt;
+&lt;a class="anchor" href="#configuring-libraries"&gt;&lt;span class="visuallyhidden"&gt;Configuring Libraries permalink&lt;/span&gt;&lt;/a&gt;Configuring Libraries&lt;/h4&gt;
+
+&lt;p&gt;With &lt;code&gt;@import&lt;/code&gt;, libraries are often configured by setting global variables that
+override &lt;code&gt;!default&lt;/code&gt; variables defined by those libraries. Because variables are
+no longer global with &lt;code&gt;@use&lt;/code&gt;, it supports a more explicit way of configuring
+libraries: the &lt;code&gt;with&lt;/code&gt; clause.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// bootstrap.scss
+&lt;/span&gt;&lt;span class="nv"&gt;$paragraph-margin-bottom&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="m"&gt;1rem&lt;/span&gt; &lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="nb"&gt;default&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nt"&gt;p&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nl"&gt;margin-top&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+  &lt;span class="nl"&gt;margin-bottom&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nv"&gt;$paragraph-margin-bottom&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;
+  &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;paragraph-margin-bottom&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;1&lt;/span&gt;&lt;span class="nc"&gt;.2rem&lt;/span&gt;
+&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This sets bootstrap&amp;rsquo;s &lt;code&gt;$paragraph-margin-bottom&lt;/code&gt; variable to &lt;code&gt;1.2rem&lt;/code&gt; before
+evaluating it. The &lt;code&gt;with&lt;/code&gt; clause only allows variables defined in (or forwarded
+by) the module being imported, and only if they&amp;rsquo;re defined with &lt;code&gt;!default&lt;/code&gt;, so
+users are protected against typos.&lt;/p&gt;
+
+&lt;h2 id="forward-for-library-authors"&gt;
+&lt;a class="anchor" href="#forward-for-library-authors"&gt;&lt;span class="visuallyhidden"&gt;@forward, for Library Authors permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;@forward&lt;/code&gt;, for Library Authors&lt;/h2&gt;
+
+&lt;p&gt;The &lt;a href="/documentation/at-rules/forward"&gt;&lt;code&gt;@forward&lt;/code&gt; rule&lt;/a&gt; includes another module&amp;rsquo;s variables, mixins, and
+functions as part of the API exposed by the current module, without making them
+visible to code within the current module. It allows library authors to be able
+to split up their library among many different source files without sacrificing
+locality within those files. Unlike &lt;code&gt;@use&lt;/code&gt;, forward doesn&amp;rsquo;t add any namespaces
+to names.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// bootstrap.scss
+&lt;/span&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"functions"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"variables"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"mixins"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id="visibility-controls"&gt;
+&lt;a class="anchor" href="#visibility-controls"&gt;&lt;span class="visuallyhidden"&gt;Visibility Controls permalink&lt;/span&gt;&lt;/a&gt;Visibility Controls&lt;/h3&gt;
+
+&lt;p&gt;A &lt;code&gt;@forward&lt;/code&gt; rule can choose to show only specific names:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"functions"&lt;/span&gt; &lt;span class="nt"&gt;show&lt;/span&gt; &lt;span class="nt"&gt;color-yiq&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It can also hide names that are intended to be library-private:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"functions"&lt;/span&gt; &lt;span class="nt"&gt;hide&lt;/span&gt; &lt;span class="nt"&gt;assert-ascending&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id="extra-prefixing"&gt;
+&lt;a class="anchor" href="#extra-prefixing"&gt;&lt;span class="visuallyhidden"&gt;Extra Prefixing permalink&lt;/span&gt;&lt;/a&gt;Extra Prefixing&lt;/h3&gt;
+
+&lt;p&gt;If you forward a child module through an all-in-one module, you may want to add
+some manual namespacing to that module. You can do what with the &lt;code&gt;as&lt;/code&gt; clause,
+which adds a prefix to every member name that&amp;rsquo;s forwarded:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// material/_index.scss
+&lt;/span&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"theme"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="nt"&gt;theme-&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This way users can use the all-in-one module with well-scoped names for theme
+variables:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"material"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;theme-primary&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;blue&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;or they can use the child module with simpler names:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"material/theme"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;primary&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;blue&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id="built-in-modules"&gt;
+&lt;a class="anchor" href="#built-in-modules"&gt;&lt;span class="visuallyhidden"&gt;Built-In Modules permalink&lt;/span&gt;&lt;/a&gt;Built-In Modules&lt;/h2&gt;
+
+&lt;p&gt;The new module system also adds &lt;a href="/documentation/modules"&gt;built-in modules&lt;/a&gt;
+(&lt;code&gt;sass:math&lt;/code&gt;, &lt;code&gt;sass:color&lt;/code&gt;, &lt;code&gt;sass:string&lt;/code&gt;, &lt;code&gt;sass:list&lt;/code&gt;, &lt;code&gt;sass:map&lt;/code&gt;,
+&lt;code&gt;sass:selector&lt;/code&gt;, and &lt;code&gt;sass:meta&lt;/code&gt;) to hold all the existing built-in Sass
+functions. Because these modules will (typically) be imported with a namespace,
+it&amp;rsquo;s now much easier to use Sass functions without running into conflicts with
+plain CSS functions.&lt;/p&gt;
+
+&lt;p&gt;This in turn makes it much safer for Sass to add new functions. We expect to add a number of convenience functions to these modules in the future.&lt;/p&gt;
+
+&lt;h3 id="renamed-functions"&gt;
+&lt;a class="anchor" href="#renamed-functions"&gt;&lt;span class="visuallyhidden"&gt;Renamed Functions permalink&lt;/span&gt;&lt;/a&gt;Renamed Functions&lt;/h3&gt;
+
+&lt;p&gt;Some functions have different names in the built-in modules than they did as
+global functions. Built-in functions that already had manual namespaces, like
+&lt;a href="/documentation/modules/map#get"&gt;&lt;code&gt;map-get()&lt;/code&gt;&lt;/a&gt;, have those namespaces removed in
+the built-in modules so you can just write &lt;code&gt;map.get()&lt;/code&gt;. Similarly,
+&lt;a href="/documentation/modules/color#adjust"&gt;&lt;code&gt;adjust-color()&lt;/code&gt;&lt;/a&gt;,
+&lt;a href="/documentation/modules/color#scale"&gt;&lt;code&gt;scale-color()&lt;/code&gt;&lt;/a&gt;, and
+&lt;a href="/documentation/modules/color#change"&gt;&lt;code&gt;change-color()&lt;/code&gt;&lt;/a&gt; are now
+&lt;code&gt;color.adjust()&lt;/code&gt;, &lt;code&gt;color.scale()&lt;/code&gt;, and &lt;code&gt;color.change()&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;We&amp;rsquo;ve also taken this opportunity to change a couple confusing old function
+names. &lt;a href="/documentation/modules/math#unitless"&gt;&lt;code&gt;unitless()&lt;/code&gt;&lt;/a&gt; is now
+&lt;code&gt;math.is-unitless()&lt;/code&gt;, and
+&lt;a href="/documentation/modules/math#compatible"&gt;&lt;code&gt;comparable()&lt;/code&gt;&lt;/a&gt; is now
+&lt;code&gt;math.compatible()&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id="removed-functions"&gt;
+&lt;a class="anchor" href="#removed-functions"&gt;&lt;span class="visuallyhidden"&gt;Removed Functions permalink&lt;/span&gt;&lt;/a&gt;Removed Functions&lt;/h3&gt;
+
+&lt;p&gt;Sass&amp;rsquo;s shorthand color functions &lt;code&gt;lighten()&lt;/code&gt;, &lt;code&gt;darken()&lt;/code&gt;, &lt;code&gt;saturate()&lt;/code&gt;,
+&lt;code&gt;desaturate()&lt;/code&gt;, &lt;code&gt;opacify()&lt;/code&gt;, &lt;code&gt;fade-in()&lt;/code&gt;, &lt;code&gt;transparentize()&lt;/code&gt;, and &lt;code&gt;fade-out()&lt;/code&gt;
+all had very unintuitive behavior. Rather than scaling their associated
+attributes fluidly, they just incremented them by a static amount, so that
+&lt;code&gt;lighten($color, 20%)&lt;/code&gt; would return &lt;code&gt;white&lt;/code&gt; for a color with &lt;code&gt;85%&lt;/code&gt; lightness
+rather than returning a color with &lt;code&gt;88%&lt;/code&gt; lightness (&lt;code&gt;20%&lt;/code&gt; closer to full white).&lt;/p&gt;
+
+&lt;p&gt;To help set us on the path towards fixing this, these functions (along with
+&lt;code&gt;adjust-hue()&lt;/code&gt;) aren&amp;rsquo;t included in the new built-in modules. You can still get
+the same effect by calling
+&lt;a href="/documentation/modules/color#adjust"&gt;&lt;code&gt;color.adjust()&lt;/code&gt;&lt;/a&gt;—for example,
+&lt;code&gt;lighten($color, $amount)&lt;/code&gt; is equivalent to &lt;code&gt;color.adjust($color, $lightness:
+$amount)&lt;/code&gt;—but we recommend trying to use
+&lt;a href="/documentation/modules/color#scale"&gt;&lt;code&gt;color.scale()&lt;/code&gt;&lt;/a&gt; instead if possible
+because of how much more intuitive it is.&lt;/p&gt;
+
+&lt;p&gt;At some point in the future, we plan to add &lt;code&gt;color.lighten()&lt;/code&gt; and similar
+functions as shorthands for &lt;code&gt;color.scale()&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id="meta-load-css"&gt;
+&lt;a class="anchor" href="#meta-load-css"&gt;&lt;span class="visuallyhidden"&gt;meta.load-css() permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;meta.load-css()&lt;/code&gt;
+&lt;/h3&gt;
+
+&lt;p&gt;The new module system comes with a new built-in mixin, &lt;a href="/documentation/modules/meta#load-css"&gt;&lt;code&gt;meta.load-css($url,
+$with: ())&lt;/code&gt;&lt;/a&gt;. This mixin dynamically loads
+the module with the given URL and includes its CSS (although its functions,
+variables, and mixins are not made available). This is a replacement for nested
+imports, and it helps address some use-cases of dynamic imports without many of
+the problems that would arise if new members could be loaded dynamically.&lt;/p&gt;
+
+&lt;h2 id="import-compatibility"&gt;
+&lt;a class="anchor" href="#import-compatibility"&gt;&lt;span class="visuallyhidden"&gt;@import Compatibility permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;@import&lt;/code&gt; Compatibility&lt;/h2&gt;
+
+&lt;p&gt;The Sass ecosystem won&amp;rsquo;t switch to &lt;code&gt;@use&lt;/code&gt; overnight, so in the meantime it needs
+to &lt;a href="/documentation/at-rules/import#import-and-modules"&gt;interoperate well with
+&lt;code&gt;@import&lt;/code&gt;&lt;/a&gt;.
+This is supported in both directions:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;When a file that contains &lt;code&gt;@import&lt;/code&gt;s is &lt;code&gt;@use&lt;/code&gt;d, everything in its global
+namespace is treated as a single module. This module&amp;rsquo;s members are then
+referred to using its namespace as normal.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;When a file that contains &lt;code&gt;@use&lt;/code&gt;s is &lt;code&gt;@import&lt;/code&gt;ed, everything in its public API
+is added to the importing stylesheet&amp;rsquo;s global scope. This allows a library to
+control what specific names it exports, even for users who &lt;code&gt;@import&lt;/code&gt; it rather
+than &lt;code&gt;@use&lt;/code&gt; it.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In order to allow libraries to maintain their existing &lt;code&gt;@import&lt;/code&gt;-oriented API,
+with explicit namespacing where necessary, this proposal also adds support for
+files that are only visible to &lt;code&gt;@import&lt;/code&gt;, not to &lt;code&gt;@use&lt;/code&gt;. They&amp;rsquo;re written
+&lt;code&gt;&amp;quot;file.import.scss&amp;quot;&lt;/code&gt;, and imported when the user writes &lt;code&gt;@import &amp;quot;file&amp;quot;&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id="automatic-migration"&gt;
+&lt;a class="anchor" href="#automatic-migration"&gt;&lt;span class="visuallyhidden"&gt;Automatic Migration permalink&lt;/span&gt;&lt;/a&gt;Automatic Migration&lt;/h2&gt;
+
+&lt;p&gt;Concurrent with the launch of the new module system, we&amp;rsquo;re launching a new
+&lt;a href="/documentation/cli/migrator"&gt;automated Sass migrator&lt;/a&gt;. This tool makes it easy
+to migrate most stylesheets to use the new module system automatically. Follow
+the instructions on &lt;a href="/documentation/cli/migrator#installation"&gt;the Sass website&lt;/a&gt;
+to install it, then run it on your application:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ sass-migrator module --migrate-deps &amp;lt;path/to/style.scss&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The &lt;a href="/documentation/cli/migrator#migrate-deps"&gt;&lt;code&gt;--migrate-deps&lt;/code&gt; flag&lt;/a&gt; tells the
+migrator to migrate not only the file you pass, but anything it imports as well.
+The migrator will automatically pick up files imported through &lt;a href="https://github.com/webpack-contrib/sass-loader#resolving-import-at-rules"&gt;Webpack&amp;rsquo;s
+&lt;code&gt;node_modules&lt;/code&gt;
+syntax&lt;/a&gt;,
+but you can also pass explicit load paths with the &lt;a href="/documentation/cli/migrator#load-path"&gt;&lt;code&gt;--load-path&lt;/code&gt;
+flag&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you want the migrator to tell you what changes it would make without actually
+making them, pass both the &lt;a href="/documentation/cli/migrator#dry-run"&gt;&lt;code&gt;--dry-run&lt;/code&gt;
+flag&lt;/a&gt; and the &lt;a href="/documentation/cli/migrator#verbose"&gt;&lt;code&gt;--verbose&lt;/code&gt;
+flag&lt;/a&gt; to tell it to just print out the
+changes it would make without saving them to disk.&lt;/p&gt;
+
+&lt;h3 id="migrating-a-library"&gt;
+&lt;a class="anchor" href="#migrating-a-library"&gt;&lt;span class="visuallyhidden"&gt;Migrating a Library permalink&lt;/span&gt;&lt;/a&gt;Migrating a Library&lt;/h3&gt;
+
+&lt;p&gt;If you want to migrate a Sass library that&amp;rsquo;s meant for downstream users to load
+and use, run:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ sass-migrator module --migrate-deps --forward=all &amp;lt;path/to/index.scss&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The &lt;a href="/documentation/cli/migrator#forward"&gt;&lt;code&gt;--forward&lt;/code&gt; flag&lt;/a&gt; tells the migrator
+to add &lt;a href="/documentation/at-rules/forward"&gt;&lt;code&gt;@forward&lt;/code&gt; rules&lt;/a&gt; so that users can
+still load all the mixins, variables, and functions your library defines with a
+single &lt;code&gt;@use&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you added a manual namespace to your library to avoid name conflicts, the
+migrator will remove it for you if you pass the &lt;a href="/documentation/cli/migrator#remove-prefix"&gt;&lt;code&gt;--remove-prefix&lt;/code&gt;
+flag&lt;/a&gt;. You can even choose to only
+forward members that originally had that prefix by passing &lt;code&gt;--forward=prefixed&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id="filing-issues"&gt;
+&lt;a class="anchor" href="#filing-issues"&gt;&lt;span class="visuallyhidden"&gt;Filing Issues permalink&lt;/span&gt;&lt;/a&gt;Filing Issues&lt;/h3&gt;
+
+&lt;p&gt;The migration tool is brand new, so it may still have some rough edges. If you
+run into any problems, please don&amp;rsquo;t hesitate to &lt;a href="https://github.com/sass/migrator/issues/new"&gt;file an issue on
+GitHub&lt;/a&gt;!&lt;/p&gt;
+
+&lt;h2 id="try-it-now"&gt;
+&lt;a class="anchor" href="#try-it-now"&gt;&lt;span class="visuallyhidden"&gt;Try It Now! permalink&lt;/span&gt;&lt;/a&gt;Try It Now!&lt;/h2&gt;
+
+&lt;p&gt;The module system is available as part of Dart Sass 1.23.0. You can install it
+right now using:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ npm install -g sass
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Alternately, check out &lt;a href="/install"&gt;the installation page&lt;/a&gt; for all the different
+ways it can be installed!&lt;/p&gt;
+
+&lt;h2 id="future-plans"&gt;
+&lt;a class="anchor" href="#future-plans"&gt;&lt;span class="visuallyhidden"&gt;Future Plans permalink&lt;/span&gt;&lt;/a&gt;Future Plans&lt;/h2&gt;
+
+&lt;p&gt;The Sass team wants to allow for a large amount of time when &lt;code&gt;@use&lt;/code&gt; and
+&lt;code&gt;@import&lt;/code&gt; can coexist, to help the ecosystem smoothly migrate to the new system.
+However, doing away with &lt;code&gt;@import&lt;/code&gt; entirely is the ultimate goal for simplicity,
+performance, and CSS compatibility. As such, we plan to gradually turn down
+support for &lt;code&gt;@import&lt;/code&gt; on the following timeline:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;One year after both Dart Sass and LibSass have launched support for the
+module system &lt;em&gt;or&lt;/em&gt; two years after Dart Sass launches support for the module
+system, whichever comes sooner (&lt;strong&gt;1 October 2021&lt;/strong&gt; at latest), we will
+deprecate &lt;code&gt;@import&lt;/code&gt; as well as global core library function calls that could
+be made through modules.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;One year after this deprecation goes into effect (&lt;strong&gt;1 October 2022&lt;/strong&gt; at
+latest), we will drop support for &lt;code&gt;@import&lt;/code&gt; and most global functions
+entirely. This will involve a major version release for all implementations.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This means that there will be at least two full years when &lt;code&gt;@import&lt;/code&gt; and &lt;code&gt;@use&lt;/code&gt;
+are both usable at once, and likely closer to three years in practice.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Module System Preview</title>
+    <link href="https://sass-lang.com/blog/module-system-preview" rel="alternate"/>
+    <id>https://sass-lang.com/blog/module-system-preview</id>
+    <published>2019-09-04T23:14:00+00:00</published>
+    <updated>2020-01-07T00:37:23+00:00</updated>
+    <author>
+      <name>Natalie Weizenbaum</name>
+    </author>
+    <content type="html">&lt;p&gt;Exciting news, Sass fans! After a year of development and some iteration on the
+spec, we&amp;rsquo;re ready to launch a beta preview of the new Sass module system! We may
+still make a few last-minute tweaks based on user feedback, so don&amp;rsquo;t go using
+itin production just yet, but please do take this opportunity to play around
+with it and let us know what you think.&lt;/p&gt;
+
+&lt;h2 id="installing-the-preview"&gt;
+&lt;a class="anchor" href="#installing-the-preview"&gt;&lt;span class="visuallyhidden"&gt;Installing the Preview permalink&lt;/span&gt;&lt;/a&gt;Installing the Preview&lt;/h2&gt;
+
+&lt;p&gt;The preview release is available on all the normal distribution channels as
+version &lt;code&gt;1.23.0-module.beta.1&lt;/code&gt;. You can download it from the &lt;a href="https://github.com/sass/dart-sass/releases/tag/1.23.0-module.beta.1"&gt;GitHub release
+page&lt;/a&gt;, or
+install it using one of the following commands (depending on your preferred
+installation channel):&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ npm install --save-dev sass@1.23.0-module.beta.1
+
+$ npm install -g sass@1.23.0-module.beta.1
+
+$ brew install sass/sass/sass@1.23.0-module.beta.1
+
+$ choco install sass --version 1.23.0.modulebeta-1
+
+$ pub global activate sass 1.23.0-module.beta.1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Note that 1.23.0 may not &lt;em&gt;actually&lt;/em&gt; be the final version number for the stable
+module system release, it&amp;rsquo;s just the next minor version number in Dart Sass&amp;rsquo;s
+release series.&lt;/p&gt;
+
+&lt;h2 id="how-to-use-the-module-system"&gt;
+&lt;a class="anchor" href="#how-to-use-the-module-system"&gt;&lt;span class="visuallyhidden"&gt;How to Use the Module System permalink&lt;/span&gt;&lt;/a&gt;How to Use the Module System&lt;/h2&gt;
+
+&lt;p&gt;The original &lt;a href="/blog/request-for-comments-module-system-proposal"&gt;summary of the module
+system&lt;/a&gt; is still a great way
+to learn how it works. You can also check out the &lt;a href="https://github.com/sass/sass/blob/master/accepted/module-system.md"&gt;official
+proposal&lt;/a&gt;
+for a much more detailed dive into its behavior.&lt;/p&gt;
+
+&lt;h2 id="sending-feedback"&gt;
+&lt;a class="anchor" href="#sending-feedback"&gt;&lt;span class="visuallyhidden"&gt;Sending Feedback permalink&lt;/span&gt;&lt;/a&gt;Sending Feedback&lt;/h2&gt;
+
+&lt;p&gt;If you have opinions on the module system, please &lt;a href="https://github.com/sass/language/issues/new"&gt;file an issue on
+GitHub&lt;/a&gt; or just &lt;a href="https://twitter.com/SassCSS"&gt;tweet at
+@SassCSS&lt;/a&gt;. We&amp;rsquo;ll take anything from &amp;ldquo;it looks
+awesome&amp;rdquo; to &amp;ldquo;it looks awful&amp;rdquo;, although the more specific you can be the more
+information we have to work with!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Request For Comments: Forward Slash as Separator</title>
+    <link href="https://sass-lang.com/blog/request-for-commentsforward-slash-as-separator" rel="alternate"/>
+    <id>https://sass-lang.com/blog/request-for-commentsforward-slash-as-separator</id>
+    <published>2019-05-07T00:15:00+00:00</published>
+    <updated>2020-01-07T00:37:23+00:00</updated>
+    <author>
+      <name>Natalie Weizenbaum</name>
+    </author>
+    <content type="html">&lt;p&gt;Early on in Sass&amp;rsquo;s history, the decision was made to use &lt;code&gt;/&lt;/code&gt; as a division
+operator, since that was (and is) by far the most common representation across
+programming languages. The &lt;code&gt;/&lt;/code&gt; character was used in very few plain CSS
+properties, and for those it was an optional shorthand. So Sass defined &lt;a href="/documentation/operators/numeric#slash-separated-values"&gt;a set
+of heuristics&lt;/a&gt; that defined when &lt;code&gt;/&lt;/code&gt; would be rendered as a literal slash
+versus treated as an operator.&lt;/p&gt;
+
+&lt;p&gt;For a long time, these heuristics worked pretty well. In recent years, however,
+new additions to CSS such as &lt;a href="https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row"&gt;CSS Grid&lt;/a&gt; and &lt;a href="https://drafts.csswg.org/css-color/#rgb-functions"&gt;CSS Color Level 4&lt;/a&gt; have been
+using &lt;code&gt;/&lt;/code&gt; as a separator increasingly often. Using the same character for both
+division and slash-separation is becoming more and more annoying to users, and
+will likely eventually become untenable.&lt;/p&gt;
+
+&lt;p&gt;As such, we&amp;rsquo;re planning to redefine &lt;code&gt;/&lt;/code&gt; to be &lt;em&gt;only&lt;/em&gt; a separator. Rather than
+creating an unquoted string (as it currently does when at least one operand
+isn&amp;rsquo;t a number), it will create a list with a new slash separator. For example,
+&lt;code&gt;1 / 2 / 3&lt;/code&gt; will be a three-element slash-separated list. Division will instead
+be written as a function, &lt;code&gt;divide()&lt;/code&gt; (or &lt;code&gt;math.div()&lt;/code&gt; in &lt;a href="/blog/request-for-comments-module-system-proposal"&gt;the new module
+system&lt;/a&gt;).&lt;/p&gt;
+
+&lt;h2 id="rollout"&gt;
+&lt;a class="anchor" href="#rollout"&gt;&lt;span class="visuallyhidden"&gt;Rollout permalink&lt;/span&gt;&lt;/a&gt;Rollout&lt;/h2&gt;
+
+&lt;p&gt;This is a major breaking change to existing Sass semantics, so we&amp;rsquo;ll roll it out
+in a three-stage process:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;The first stage won&amp;rsquo;t introduce any breaking changes. It will:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Add a &lt;code&gt;divide()&lt;/code&gt; function which will work exactly like the &lt;code&gt;/&lt;/code&gt; operator
+does today, except that it will produce deprecation warnings for any
+non-number arguments.&lt;/li&gt;
+&lt;li&gt;Add slash-separated lists to Sass&amp;rsquo;s object models, &lt;em&gt;without&lt;/em&gt; a literal
+syntax for creating them. That will come later, since it would otherwise be
+a breaking change.&lt;/li&gt;
+&lt;li&gt;Add a &lt;code&gt;slash-list()&lt;/code&gt; function that will create slash-separated lists.&lt;/li&gt;
+&lt;li&gt;Produce deprecation warnings for all &lt;code&gt;/&lt;/code&gt; operations that are interpreted as
+division.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;The second stage &lt;em&gt;will&lt;/em&gt; be a breaking change. It will:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Make &lt;code&gt;/&lt;/code&gt; exclusively a list separator.&lt;/li&gt;
+&lt;li&gt;Make &lt;code&gt;divide()&lt;/code&gt; throw errors for non-number arguments.&lt;/li&gt;
+&lt;li&gt;Deprecate the &lt;code&gt;slash-list()&lt;/code&gt; function, since it will now be redundant.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;The third stage will just remove the &lt;code&gt;slash-list()&lt;/code&gt; function. This is not a
+priority, and will be delayed until the next major version release.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id="giving-feedback"&gt;
+&lt;a class="anchor" href="#giving-feedback"&gt;&lt;span class="visuallyhidden"&gt;Giving Feedback permalink&lt;/span&gt;&lt;/a&gt;Giving Feedback&lt;/h2&gt;
+
+&lt;p&gt;If you want more details on exactly how the proposed behavior will work, &lt;a href="https://github.com/sass/sass/blob/master/accepted/slash-separator.md"&gt;head
+over to the Sass language repo and read the full
+proposal&lt;/a&gt;.
+You can skip the Background and Summary sections, since they&amp;rsquo;re included above.
+Be aware, though, that it&amp;rsquo;s written to be a specification; it&amp;rsquo;s a great for
+figuring out how exactly an edge case should work, but it&amp;rsquo;s not as
+conversational as the sections quoted above.&lt;/p&gt;
+
+&lt;p&gt;If you have any issues with the proposal as written, or if it doesn&amp;rsquo;t cover a
+use-case that&amp;rsquo;s important to you, &lt;a href="https://github.com/sass/sass/issues?utf8=%E2%9C%93&amp;amp;q=is%3Aissue+is%3Aopen+label%3A%22proposal%3A+slash+separator%22"&gt;please bring that up in the Sass language
+issue
+tracker&lt;/a&gt;.
+We&amp;rsquo;ll be leaving it open for discussion for at least two weeks before we mark
+the proposal as &amp;ldquo;accepted&amp;rdquo; and move on to the implementation phase.&lt;/p&gt;
+
+&lt;p&gt;Please be aware, though, that while we welcome community feedback, the design of
+Sass is ultimately in the hands of the language team. We&amp;rsquo;ll absolutely consider
+the perspectives and use-cases of users who speak up, but it&amp;rsquo;s also our job to
+consider all the users who are new to Sass or even to CSS and who don&amp;rsquo;t yet know
+to read blogs or comment on issue trackers. Remember that our careful
+decision-making made Sass what it is today, and have patience with us if we
+don&amp;rsquo;t make the decisions you would have!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Brand New Sass Docs</title>
+    <link href="https://sass-lang.com/blog/brand-new-sass-docs" rel="alternate"/>
+    <id>https://sass-lang.com/blog/brand-new-sass-docs</id>
+    <published>2019-04-23T18:04:00+00:00</published>
+    <updated>2020-01-07T00:37:23+00:00</updated>
+    <author>
+      <name>Natalie Weizenbaum</name>
+    </author>
+    <content type="html">&lt;p&gt;I&amp;rsquo;m excited to announce the launch of &lt;a href="/documentation"&gt;a full rewrite and redesign of the Sass
+documentation&lt;/a&gt;, going live today after eight months of work by
+&lt;a href="https://github.com/jina"&gt;Jina Anne&lt;/a&gt; and myself! Jina, the lead of Team Sass
+Design, is responsible for the layout and visual design of the new
+documentation. She made everything gorgeous and readable.
+&lt;a href="https://github.com/nex3"&gt;I&lt;/a&gt; wrote all the text, so if you see a typo I&amp;rsquo;m the
+one to blame.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src="/assets/img/blog/021-function-docs.png" alt="A preview of the function documentation page." width=640 /&gt;&lt;/p&gt;
+
+&lt;p&gt;In addition to reorganizing and rewriting all the documentation, we&amp;rsquo;ve added a special example widget that makes it easy to see how Sass stylesheets translate into CSS. It has tabs for both SCSS and the indented syntax, so you can use whichever you prefer, or switch between them to see the difference.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src="/assets/img/blog/021-syntax-switcher.png" alt="The example widget." width=640 /&gt;&lt;/p&gt;
+
+&lt;p&gt;The Sass function documentation is included in the rewrite. Functions are now organized into easy-to-understand sections, and Jina designed a super readable layout for them.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src="/assets/img/blog/021-functions-math.png" alt="The round() function." width=640 /&gt;&lt;/p&gt;
+
+&lt;p&gt;Best of all, the new documentation has full-text search courtesy of our friends
+at &lt;a href="https://www.algolia.com/"&gt;Algolia&lt;/a&gt;. You can search for features, function
+names, or anything else you want to learn more about and find it in an instant.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="An Algolia search." width="521" height="508" src="/assets/img/blog/021-search-aea9bf42.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;Please take a look and enjoy! And if you find any issues, don&amp;rsquo;t hesitate to
+&lt;a href="https://github.com/sass/sass-site/issues/new"&gt;file them&lt;/a&gt; so we can keep making
+the website better and better.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Ruby Sass Has Reached End-Of-Life</title>
+    <link href="https://sass-lang.com/blog/ruby-sass-is-unsupported" rel="alternate"/>
+    <id>https://sass-lang.com/blog/ruby-sass-is-unsupported</id>
+    <published>2019-04-04T00:15:00+00:00</published>
+    <updated>2020-01-07T00:37:23+00:00</updated>
+    <author>
+      <name>Natalie Weizenbaum</name>
+    </author>
+    <content type="html">&lt;p&gt;One year has passed since we announced &lt;a href="/blog/ruby-sass-is-deprecated"&gt;the deprecation of Ruby
+Sass&lt;/a&gt;, and it has now officially reached its
+end-of-life. We will release one final version of the Ruby Sass gem that will
+print a warning indicating that it&amp;rsquo;s no longer receiving updates, and then
+archive &lt;a href="https://github.com/sass/ruby-sass"&gt;the GitHub repository&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="A woman saying &amp;quot;Goodbye, my friend&amp;quot;" width="500" height="205" src="/assets/img/blog/020-goodbye-9a7ba320.gif" /&gt;&lt;/p&gt;
+
+&lt;p&gt;We will then merge the &lt;a href="https://github.com/sass/language"&gt;sass/language&lt;/a&gt; repo
+into the &lt;a href="https://github.com/sass/sass"&gt;sass/sass&lt;/a&gt; repo. This means that
+&lt;strong&gt;anyone still depending on Ruby Sass from &lt;code&gt;github.com/sass/sass&lt;/code&gt; will break.&lt;/strong&gt;
+Going forward, the sass/sass repo will be the location for working on the
+language specs, and will not contain any code. The sass/language repo will just
+include links pointing to sass/sass.&lt;/p&gt;
+
+&lt;h3 id="migrating-away"&gt;
+&lt;a class="anchor" href="#migrating-away"&gt;&lt;span class="visuallyhidden"&gt;Migrating Away permalink&lt;/span&gt;&lt;/a&gt;Migrating Away&lt;/h3&gt;
+
+&lt;p&gt;If you haven&amp;rsquo;t migrated away from Ruby Sass yet, now is the time. The best way
+to do that depends on how you use Ruby Sass today.&lt;/p&gt;
+
+&lt;p&gt;If you use Ruby Sass as a command-line tool, the easiest way to migrate is to
+&lt;a href="/install"&gt;install Dart Sass&lt;/a&gt; as a command-line tool. It supports a similar
+interface to Ruby Sass, and you can run &lt;code&gt;sass --help&lt;/code&gt; for a full explanation of
+its capabilities.&lt;/p&gt;
+
+&lt;p&gt;If you use Ruby Sass as a plugin for a Ruby web app, particularly if you define
+your own Sass functions in Ruby, the
+&lt;a href="https://github.com/sass/sassc-ruby"&gt;&lt;code&gt;sassc&lt;/code&gt;&lt;/a&gt; gem provides access to
+&lt;a href="/libsass"&gt;LibSass&lt;/a&gt; from Ruby with a very similar API to Ruby Sass. In most
+cases, you can just replace the &lt;code&gt;Sass&lt;/code&gt; module with the &lt;code&gt;SassC&lt;/code&gt; module and your
+code will continue to work.&lt;/p&gt;
+
+&lt;p&gt;If you&amp;rsquo;re using Rails, we particularly recommend using the
+&lt;a href="https://github.com/sass/sassc-rails"&gt;&lt;code&gt;sassc-rails&lt;/code&gt;&lt;/a&gt; gem, which wraps up the
+&lt;code&gt;sassc&lt;/code&gt; gem and integrates it smoothly into the asset pipeline. Most of the time
+you won&amp;rsquo;t even need to change any of your code.&lt;/p&gt;
+
+&lt;h3 id="farewell-ruby-sass"&gt;
+&lt;a class="anchor" href="#farewell-ruby-sass"&gt;&lt;span class="visuallyhidden"&gt;Farewell, Ruby Sass! permalink&lt;/span&gt;&lt;/a&gt;Farewell, Ruby Sass!&lt;/h3&gt;
+
+&lt;p&gt;On a personal note, I started writing Ruby Sass in 2006 when I was just a
+college kid coding in between homework assignments. I&amp;rsquo;ve worked on it (with
+varying degrees of focus) continuously for the last 13 years, and I expect it&amp;rsquo;ll
+take me a long time to match that record with any other codebase. I&amp;rsquo;m glad to
+see the language &lt;a href="/blog/announcing-dart-sass"&gt;moving forward&lt;/a&gt;, but at the same
+time I&amp;rsquo;ll miss Ruby Sass terribly.&lt;/p&gt;
+
+&lt;p&gt;I also want to take this opportunity to thank our users, especially those in the
+Ruby community in which Sass was born, for appreciating the language we created
+and evangelizing it so widely. Sass has an incredible userbase, and I&amp;rsquo;ve been so
+proud to see how large and diverse it&amp;rsquo;s grown over the years. Let&amp;rsquo;s keep it up
+as we move into a new era of Sass!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Request For Comments: Module System</title>
+    <link href="https://sass-lang.com/blog/request-for-comments-module-system-proposal" rel="alternate"/>
+    <id>https://sass-lang.com/blog/request-for-comments-module-system-proposal</id>
+    <published>2018-11-27T21:10:00+00:00</published>
+    <updated>2020-01-07T00:37:23+00:00</updated>
+    <author>
+      <name>Natalie Weizenbaum</name>
+    </author>
+    <content type="html">&lt;p&gt;Many of the most frequently-requested features for Sass have to do with its
+imports. The import system that we&amp;rsquo;ve had since the very early releases of Sass
+is, to put it simply, not great. It does little more than textually include one
+Sass file in another, which makes it hard to keep track of where mixins,
+functions, and variables were defined and hard to be sure that any new additions
+won&amp;rsquo;t happen to conflict with something elsewhere in the project. To make
+matters worse, it overlaps with CSS&amp;rsquo;s built-in &lt;code&gt;@import&lt;/code&gt; rule, which forces us
+to have &lt;a href="/documentation/file.SASS_REFERENCE.html#import"&gt;a bunch of heuristics&lt;/a&gt;
+to decide which is which.&lt;/p&gt;
+
+&lt;p&gt;Because of these problems and others, we&amp;rsquo;ve wanted to do a full overhaul of the
+way Sass files relate to one another for a long time. Over the last few years,
+I&amp;rsquo;ve been working with the Sass core team and Sass framework maintainers to
+create a proposal for a module system that&amp;rsquo;s fit to replace &lt;code&gt;@import&lt;/code&gt;. That
+proposal is now in a place that the core team is pretty happy with, at least as
+a starting point, so we want to open it up for community feedback.&lt;/p&gt;
+
+&lt;p&gt;If you want to read the full proposal, &lt;a href="https://github.com/sass/language/blob/master/accepted/module-system.md"&gt;it&amp;rsquo;s available on
+GitHub&lt;/a&gt;.
+Feel free to &lt;a href="https://github.com/sass/language/issues/new"&gt;file issues&lt;/a&gt; for any
+feedback you have. The main body of the proposal is written as a spec, so it&amp;rsquo;s
+very detailed, but the Goals, Summary, and FAQ sections (reproduced below)
+should be accessible to anyone familiar with Sass.&lt;/p&gt;
+
+&lt;h2 id="goals"&gt;
+&lt;a class="anchor" href="#goals"&gt;&lt;span class="visuallyhidden"&gt;Goals permalink&lt;/span&gt;&lt;/a&gt;Goals&lt;/h2&gt;
+
+&lt;h3 id="high-level"&gt;
+&lt;a class="anchor" href="#high-level"&gt;&lt;span class="visuallyhidden"&gt;High-Level permalink&lt;/span&gt;&lt;/a&gt;High-Level&lt;/h3&gt;
+
+&lt;p&gt;These are the philosophical design goals for the module system as a whole. While
+they don&amp;rsquo;t uniquely specify a system, they do represent the underlying
+motivations behind many of the lower-level design decisions.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Locality&lt;/strong&gt;. The module system should make it possible to understand a Sass
+file by looking only at that file. An important aspect of this is that names
+in the file should be resolved based on the contents of the file rather than
+the global state of the compilation. This also applies to authoring: an author
+should be able to be confident that a name is safe to use as long as it
+doesn&amp;rsquo;t conflict with any name visible in the file.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Encapsulation&lt;/strong&gt;. The module system should allow authors, particularly
+library authors, to choose what API they expose. They should be able to define
+entities for internal use without making those entities available for external
+users to access or modify. The organization of a library&amp;rsquo;s implementation into
+files should be flexible enough to change without changing the user-visible
+API.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Configuration&lt;/strong&gt;. Sass is unusual among languages in that its design leads to
+the use of files whose entire purpose is to produce side effects—specifically,
+to emit CSS. There&amp;rsquo;s also a broader class of libraries that may not emit CSS
+directly, but do define configuration variables that are used in computations,
+including computation of other top-level variables&amp;rsquo; values. The module system
+should allow the user to flexibly use and configure modules with side-effects.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id="low-level"&gt;
+&lt;a class="anchor" href="#low-level"&gt;&lt;span class="visuallyhidden"&gt;Low-Level permalink&lt;/span&gt;&lt;/a&gt;Low-Level&lt;/h3&gt;
+
+&lt;p&gt;These are goals that are based less on philosophy than on practicality. For the
+most part, they&amp;rsquo;re derived from user feedback that we&amp;rsquo;ve collected about
+&lt;code&gt;@import&lt;/code&gt; over the years.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Import once&lt;/strong&gt;. Because &lt;code&gt;@import&lt;/code&gt; is a literal textual inclusion, multiple
+&lt;code&gt;@import&lt;/code&gt;s of the same Sass file within the scope of a compilation will
+compile and run that file multiple times. At best this hurts compilation time
+for little benefit, and it can also contribute to bloated CSS output when the
+styles themselves are duplicated. The new module system should only compile a
+file once.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Backwards compatibility&lt;/strong&gt;. We want to make it as easy as possible for people
+to migrate to the new module system, and that means making it work in
+conjunction with existing stylesheets that use &lt;code&gt;@import&lt;/code&gt;. Existing stylesheets
+that only use &lt;code&gt;@import&lt;/code&gt; should have identical importing behavior to earlier
+versions of Sass, and stylesheets should be able to change parts to &lt;code&gt;@use&lt;/code&gt;
+without changing the whole thing at once.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id="non-goals"&gt;
+&lt;a class="anchor" href="#non-goals"&gt;&lt;span class="visuallyhidden"&gt;Non-Goals permalink&lt;/span&gt;&lt;/a&gt;Non-Goals&lt;/h3&gt;
+
+&lt;p&gt;These are potential goals that we have explicitly decided to avoid pursuing as
+part of this proposal for various reasons. Some of them may be on the table for
+future work, but we don&amp;rsquo;t consider them to be blocking the module system.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Dynamic imports&lt;/strong&gt;. Allowing the path to a module to be defined dynamically,
+whether by including variables or including it in a conditional block, moves
+away from being declarative. In addition to making stylesheets harder to read,
+this makes any sort of static analysis more difficult (and actually impossible
+in the general case). It also limits the possibility of future implementation
+optimizations.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Importing multiple files at once&lt;/strong&gt;. In addition to the long-standing reason
+that this hasn&amp;rsquo;t been supported—that it opens authors up to sneaky and
+difficult-to-debug ordering bugs—this violates the principle of locality by
+obfuscating which files are imported and thus where names come from.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Extend-only imports&lt;/strong&gt;. The idea of importing a file so that the CSS it
+generates isn&amp;rsquo;t emitted unless it&amp;rsquo;s &lt;code&gt;@extend&lt;/code&gt;ed is cool, but it&amp;rsquo;s also a lot
+of extra work. This is the most likely feature to end up in a future release,
+but it&amp;rsquo;s not central enough to include in the initial module system.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Context-independent modules&lt;/strong&gt;. It&amp;rsquo;s tempting to try to make the loaded form
+of a module, including the CSS it generates and the resolved values of all its
+variables, totally independent of the entrypoint that cause it to be loaded.
+This would make it possible to share loaded modules across multiple
+compilations and potentially even serialize them to the filesystem for
+incremental compilation.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;However, it&amp;rsquo;s not feasible in practice. Modules that generate CSS almost
+  always do so based on some configuration, which may be changed by different
+  entrypoints rendering caching useless. What&amp;rsquo;s more, multiple modules may
+  depend on the same shared module, and one may modify its configuration before
+  the other uses it. Forbidding this case in general would effectively amount to
+  forbidding modules from generating CSS based on variables.&lt;/p&gt;
+
+&lt;p&gt;Fortunately, implementations have a lot of leeway to cache information that
+  the can statically determine to be context-independent, including source trees
+  and potentially even constant-folded variable values and CSS trees. Full
+  context independence isn&amp;rsquo;t likely to provide much value in addition to that.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Increased strictness&lt;/strong&gt;. Large teams with many people often want stricter
+rules around how Sass stylesheets are written, to enforce best practices and
+quickly catch mistakes. It&amp;rsquo;s tempting to use a new module system as a lever to
+push strictness further; for example, we could make it harder to have partials
+directly generate CSS, or we could decline to move functions we&amp;rsquo;d prefer
+people avoid to the new built-in modules.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;As tempting as it is, though, we want to make all existing use-cases as easy
+  as possible in the new system, &lt;em&gt;even if we think they should be avoided&lt;/em&gt;. This
+  module system is already a major departure from the existing behavior, and
+  will require a substantial amount of work from Sass users to support. We want
+  to make this transition as easy as possible, and part of that is avoiding
+  adding any unnecessary hoops users have to jump through to get their existing
+  stylesheets working in the new module system.&lt;/p&gt;
+
+&lt;p&gt;Once &lt;code&gt;@use&lt;/code&gt; is thoroughly adopted in the ecosystem, we can start thinking
+  about increased strictness in the form of lints or TypeScript-style
+  &lt;code&gt;--strict-*&lt;/code&gt; flags.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Code splitting&lt;/strong&gt;. The ability to split monolithic CSS into separate chunks
+that can be served lazily is important for maintaining quick load times for
+very large applications. However, it&amp;rsquo;s orthogonal to the problems that this
+module system is trying to solve. This system is primarily concerned with
+scoping Sass APIs (mixins, functions, and placeholders) rather than declaring
+dependencies between chunks of generated CSS.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We believe that this module system can work in concert with external
+  code-splitting systems. For example, the module system can be used to load
+  libraries that are used to style individual components, each of which is
+  compiled to its own CSS file. These CSS files could then declare dependencies
+  on one another using special comments or custom at-rules and be stitched
+  together by a code-splitting post-processor.&lt;/p&gt;
+
+&lt;h2 id="summary"&gt;
+&lt;a class="anchor" href="#summary"&gt;&lt;span class="visuallyhidden"&gt;Summary permalink&lt;/span&gt;&lt;/a&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;This proposal adds two at-rules, &lt;code&gt;@use&lt;/code&gt; and &lt;code&gt;@forward&lt;/code&gt;, which may only appear at
+the top level of stylesheets before any rules (other than &lt;code&gt;@charset&lt;/code&gt;). Together,
+they&amp;rsquo;re intended to completely replace &lt;code&gt;@import&lt;/code&gt;, which will eventually be
+deprecated and even more eventually removed from the language.&lt;/p&gt;
+
+&lt;h3 id="use"&gt;
+&lt;a class="anchor" href="#use"&gt;&lt;span class="visuallyhidden"&gt;@use permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;@use&lt;/code&gt;
+&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;@use&lt;/code&gt; makes CSS, variables, mixins, and functions from another stylesheet
+accessible in the current stylesheet. By default, variables, mixins, and
+functions are available in a namespace based on the basename of the URL.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nc"&gt;.element&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="k"&gt;@include&lt;/span&gt; &lt;span class="nd"&gt;bootstrap&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;float-left&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In addition to namespacing, there are a few important differences between &lt;code&gt;@use&lt;/code&gt;
+and &lt;code&gt;@import&lt;/code&gt;:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;@use&lt;/code&gt; only executes a stylesheet and includes its CSS once, no matter how
+many times that stylesheet is used.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@use&lt;/code&gt; only makes names available in the current stylesheet, as opposed to
+globally.&lt;/li&gt;
+&lt;li&gt;Members whose names begin with &lt;code&gt;-&lt;/code&gt; or &lt;code&gt;_&lt;/code&gt; are private to the current
+stylesheet with &lt;code&gt;@use&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;If a stylesheet includes &lt;code&gt;@extend&lt;/code&gt;, that extension is only applied to
+stylesheets it imports, not stylesheets that import it.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note that placeholder selectors are &lt;em&gt;not&lt;/em&gt; namespaced, but they &lt;em&gt;do&lt;/em&gt; respect
+privacy.&lt;/p&gt;
+
+&lt;h4 id="controlling-namespaces"&gt;
+&lt;a class="anchor" href="#controlling-namespaces"&gt;&lt;span class="visuallyhidden"&gt;Controlling Namespaces permalink&lt;/span&gt;&lt;/a&gt;Controlling Namespaces&lt;/h4&gt;
+
+&lt;p&gt;Although a &lt;code&gt;@use&lt;/code&gt; rule&amp;rsquo;s default namespace is determined by the basename of its
+URL, it can also be set explicitly using &lt;code&gt;as&lt;/code&gt;.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="nt"&gt;b&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nc"&gt;.element&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="k"&gt;@include&lt;/span&gt; &lt;span class="nd"&gt;b&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;float-left&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The special construct &lt;code&gt;as *&lt;/code&gt; can also be used to include everything in the
+top-level namespace. Note that if multiple modules expose members with the same
+name and are used with &lt;code&gt;as *&lt;/code&gt;, Sass will produce an error.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nc"&gt;.element&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="k"&gt;@include&lt;/span&gt; &lt;span class="nd"&gt;float-left&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id="configuring-libraries"&gt;
+&lt;a class="anchor" href="#configuring-libraries"&gt;&lt;span class="visuallyhidden"&gt;Configuring Libraries permalink&lt;/span&gt;&lt;/a&gt;Configuring Libraries&lt;/h4&gt;
+
+&lt;p&gt;With &lt;code&gt;@import&lt;/code&gt;, libraries are often configured by setting global variables that
+override &lt;code&gt;!default&lt;/code&gt; variables defined by those libraries. Because variables are
+no longer global with &lt;code&gt;@use&lt;/code&gt;, it supports a more explicit way of configuring
+libraries: the &lt;code&gt;with&lt;/code&gt; clause.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// bootstrap.scss
+&lt;/span&gt;&lt;span class="nv"&gt;$paragraph-margin-bottom&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="m"&gt;1rem&lt;/span&gt; &lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="nb"&gt;default&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nt"&gt;p&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nl"&gt;margin-top&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+  &lt;span class="nl"&gt;margin-bottom&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nv"&gt;$paragraph-margin-bottom&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;
+  &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;paragraph-margin-bottom&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;1&lt;/span&gt;&lt;span class="nc"&gt;.2rem&lt;/span&gt;
+&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This sets bootstrap&amp;rsquo;s &lt;code&gt;$paragraph-margin-bottom&lt;/code&gt; variable to &lt;code&gt;1.2rem&lt;/code&gt; before
+evaluating it. The &lt;code&gt;with&lt;/code&gt; clause only allows variables defined in (or forwarded
+by) the module being imported, and only if they&amp;rsquo;re defined with &lt;code&gt;!default&lt;/code&gt;, so
+users are protected against typos.&lt;/p&gt;
+
+&lt;h3 id="forward"&gt;
+&lt;a class="anchor" href="#forward"&gt;&lt;span class="visuallyhidden"&gt;@forward permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;@forward&lt;/code&gt;
+&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code&gt;@forward&lt;/code&gt; rule includes another module&amp;rsquo;s variables, mixins, and functions
+as part of the API exposed by the current module, without making them visible to
+code within the current module. It allows library authors to be able to split up
+their library among many different source files without sacrificing locality
+within those files. Unlike &lt;code&gt;@use&lt;/code&gt;, forward doesn&amp;rsquo;t add any namespaces to names.&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// bootstrap.scss
+&lt;/span&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"functions"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"variables"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"mixins"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id="visibility-controls"&gt;
+&lt;a class="anchor" href="#visibility-controls"&gt;&lt;span class="visuallyhidden"&gt;Visibility Controls permalink&lt;/span&gt;&lt;/a&gt;Visibility Controls&lt;/h4&gt;
+
+&lt;p&gt;A &lt;code&gt;@forward&lt;/code&gt; rule can choose to show only specific names:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"functions"&lt;/span&gt; &lt;span class="nt"&gt;show&lt;/span&gt; &lt;span class="nt"&gt;color-yiq&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It can also hide names that are intended to be library-private:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"functions"&lt;/span&gt; &lt;span class="nt"&gt;hide&lt;/span&gt; &lt;span class="nt"&gt;assert-ascending&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id="extra-prefixing"&gt;
+&lt;a class="anchor" href="#extra-prefixing"&gt;&lt;span class="visuallyhidden"&gt;Extra Prefixing permalink&lt;/span&gt;&lt;/a&gt;Extra Prefixing&lt;/h4&gt;
+
+&lt;p&gt;If you forward a child module through an all-in-one module, you may want to add
+some manual namespacing to that module. You can do what with the &lt;code&gt;as&lt;/code&gt; clause,
+which adds a prefix to every member name that&amp;rsquo;s forwarded:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// material/_index.scss
+&lt;/span&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"theme"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="nt"&gt;theme-&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This way users can use the all-in-one module with well-scoped names for theme
+variables:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"material"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;theme-primary&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;blue&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;or they can use the child module with simpler names:&lt;/p&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"material/theme"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;primary&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;blue&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id="import-compatibility"&gt;
+&lt;a class="anchor" href="#import-compatibility"&gt;&lt;span class="visuallyhidden"&gt;@import Compatibility permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;@import&lt;/code&gt; Compatibility&lt;/h3&gt;
+
+&lt;p&gt;The Sass ecosystem won&amp;rsquo;t switch to &lt;code&gt;@use&lt;/code&gt; overnight, so in the meantime it needs
+to interoperate well with &lt;code&gt;@import&lt;/code&gt;. This is supported in both directions:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;When a file that contains &lt;code&gt;@import&lt;/code&gt;s is &lt;code&gt;@use&lt;/code&gt;d, everything in its global
+namespace is treated as a single module. This module&amp;rsquo;s members are then
+referred to using its namespace as normal.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;When a file that contains &lt;code&gt;@use&lt;/code&gt;s is &lt;code&gt;@import&lt;/code&gt;ed, everything in its public API
+is added to the importing stylesheet&amp;rsquo;s global scope. This allows a library to
+control what specific names it exports, even for users who &lt;code&gt;@import&lt;/code&gt; it rather
+than &lt;code&gt;@use&lt;/code&gt; it.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In order to allow libraries to maintain their existing &lt;code&gt;@import&lt;/code&gt;-oriented API,
+with explicit namespacing where necessary, this proposal also adds support for
+files that are only visible to &lt;code&gt;@import&lt;/code&gt;, not to &lt;code&gt;@use&lt;/code&gt;. They&amp;rsquo;re written
+&lt;code&gt;&amp;quot;file.import.scss&amp;quot;&lt;/code&gt;, and imported when the user writes &lt;code&gt;@import &amp;quot;file&amp;quot;&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id="built-in-modules"&gt;
+&lt;a class="anchor" href="#built-in-modules"&gt;&lt;span class="visuallyhidden"&gt;Built-In Modules permalink&lt;/span&gt;&lt;/a&gt;Built-In Modules&lt;/h3&gt;
+
+&lt;p&gt;The new module system will also add seven built-in modules: &lt;code&gt;math&lt;/code&gt;, &lt;code&gt;color&lt;/code&gt;,
+&lt;code&gt;string&lt;/code&gt;, &lt;code&gt;list&lt;/code&gt;, &lt;code&gt;map&lt;/code&gt;, &lt;code&gt;selector&lt;/code&gt;, and &lt;code&gt;meta&lt;/code&gt;. These will hold all the
+existing built-in Sass functions. Because these modules will (typically) be
+imported with a namespace, it will be much easier to use Sass functions without
+running into conflicts with plain CSS functions.&lt;/p&gt;
+
+&lt;p&gt;This in turn will make it much safer for Sass to add new functions. We expect to
+add a number of convenience functions to these modules in the future.&lt;/p&gt;
+
+&lt;h4 id="meta-load-css"&gt;
+&lt;a class="anchor" href="#meta-load-css"&gt;&lt;span class="visuallyhidden"&gt;meta.load-css() permalink&lt;/span&gt;&lt;/a&gt;&lt;code&gt;meta.load-css()&lt;/code&gt;
+&lt;/h4&gt;
+
+&lt;p&gt;This proposal also adds a new built-in mixin, &lt;code&gt;meta.load-css($url, $with: ())&lt;/code&gt;.
+This mixin dynamically loads the module with the given URL and includes its CSS
+(although its functions, variables, and mixins are not made available). This is
+a replacement for nested imports, and it helps address some use-cases of dynamic
+imports without many of the problems that would arise if new members could be
+loaded dynamically.&lt;/p&gt;
+
+&lt;h2 id="frequently-asked-questions"&gt;
+&lt;a class="anchor" href="#frequently-asked-questions"&gt;&lt;span class="visuallyhidden"&gt;Frequently Asked Questions permalink&lt;/span&gt;&lt;/a&gt;Frequently Asked Questions&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Why this privacy model?&lt;/strong&gt; We considered a number of models for declaring
+members to be private, including a JS-like model where only members that were
+explicitly exported from a module were visible and a C#-like model with an
+explicit &lt;code&gt;@private&lt;/code&gt; keyword. These models involve a lot more boilerplate,
+though, and they work particularly poorly for placeholder selectors where
+privacy may be mixed within a single style rule. Name-based privacy also
+provides a degree of compatibility with conventions libraries are already
+using.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Can I make a member library-private?&lt;/strong&gt; There&amp;rsquo;s no language-level notion of a
+&amp;ldquo;library&amp;rdquo;, so library-privacy isn&amp;rsquo;t built in either. However, members used by
+one module aren&amp;rsquo;t automatically visible to downstream modules. If a module
+isn&amp;rsquo;t &lt;a href="#forward"&gt;&lt;code&gt;@forward&lt;/code&gt;ed&lt;/a&gt; through a library&amp;rsquo;s main stylesheet, it won&amp;rsquo;t
+be visible to downstream consumers and thus is effectively library-private.
+&lt;br&gt;&lt;br&gt; As a convention, we recommend that libraries write library-private
+stylesheets that aren&amp;rsquo;t intended to be used directly by their users in a
+directory named &lt;code&gt;src&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;How do I make my library configurable?&lt;/strong&gt; If you have a large library made up
+of many source files that all share some core &lt;code&gt;!default&lt;/code&gt;-based configuration,
+we recommend that you define that configuration in a file that gets forwarded
+from your library&amp;rsquo;s entrypoint and used by your library&amp;rsquo;s files. For example:&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// bootstrap.scss
+&lt;/span&gt;&lt;span class="k"&gt;@forward&lt;/span&gt; &lt;span class="s2"&gt;"variables"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"reboot"&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// _variables.scss
+&lt;/span&gt;&lt;span class="nv"&gt;$paragraph-margin-bottom&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="m"&gt;1rem&lt;/span&gt; &lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="nb"&gt;default&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// _reboot.scss
+&lt;/span&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"variables"&lt;/span&gt; &lt;span class="nt"&gt;as&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="nt"&gt;p&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nl"&gt;margin-top&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+  &lt;span class="nl"&gt;margin-bottom&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nv"&gt;$paragraph-margin-bottom&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class="highlight scss"&gt;&lt;code&gt;&lt;span class="c1"&gt;// User's stylesheet
+&lt;/span&gt;&lt;span class="k"&gt;@use&lt;/span&gt; &lt;span class="s2"&gt;"bootstrap"&lt;/span&gt; &lt;span class="nt"&gt;with&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;
+  &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="nt"&gt;paragraph-margin-bottom&lt;/span&gt;&lt;span class="nd"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;1&lt;/span&gt;&lt;span class="nc"&gt;.2rem&lt;/span&gt;
+&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id="sending-feedback"&gt;
+&lt;a class="anchor" href="#sending-feedback"&gt;&lt;span class="visuallyhidden"&gt;Sending Feedback permalink&lt;/span&gt;&lt;/a&gt;Sending Feedback&lt;/h2&gt;
+
+&lt;p&gt;This is still just a proposal. We&amp;rsquo;re pretty happy with the overall shape of the
+module system, but it&amp;rsquo;s not at all set in stone, and anything can change with
+enough feedback provided by users like you. If you have opinions, please &lt;a href="https://github.com/sass/language/issues/new"&gt;file
+an issue on GitHub&lt;/a&gt; or just &lt;a href="https://twitter.com/SassCSS"&gt;tweet
+at @SassCSS&lt;/a&gt;. We&amp;rsquo;ll take anything from &amp;ldquo;it looks
+awesome&amp;rdquo; to &amp;ldquo;it looks awful&amp;rdquo;, although the more specific you can be the more
+information we have to work with!&lt;/p&gt;
+</content>
+  </entry>
+</feed>
